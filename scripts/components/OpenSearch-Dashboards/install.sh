@@ -81,13 +81,8 @@ cd $DIR
 ## Setup default config
 if [ "$DISTRIBUTION" = "tar" ]; then
     cp ../../../config/opensearch_dashboards.yml "$OUTPUT/config/"
-
-elif [ "$DISTRIBUTION" = "deb" ]; then
+elif [ "$DISTRIBUTION" = "rpm" -o "$DISTRIBUTION" = "deb" ]; then
     cp ../../../config/opensearch_dashboards.yml "$OUTPUT/../etc/opensearch-dashboards/"
     cp -a ../../../scripts/pkg/service_templates/opensearch-dashboards/* "$OUTPUT/../"
-    cp -a ../../../scripts/pkg/build_templates/opensearch-dashboards/deb/* "$OUTPUT/../"
-elif [ "$DISTRIBUTION" = "rpm" ]; then
-    cp ../../../config/opensearch_dashboards.yml "$OUTPUT/../etc/opensearch-dashboards/"
-    cp -a ../../../scripts/pkg/service_templates/opensearch-dashboards/* "$OUTPUT/../"
-    cp -a ../../../scripts/pkg/build_templates/opensearch-dashboards/rpm/* "$OUTPUT/../"
+    cp -a ../../../scripts/pkg/build_templates/opensearch-dashboards/$DISTRIBUTION/* "$OUTPUT/../"
 fi
