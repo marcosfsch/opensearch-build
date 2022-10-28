@@ -1,3 +1,4 @@
+# Copyright OpenSearch Contributors
 # SPDX-License-Identifier: Apache-2.0
 #
 # The OpenSearch Contributors require contributions made to
@@ -32,10 +33,6 @@ class ComponentOpenSearchMin(Component):
             snapshot,
         )
 
-    def publish_to_maven_local(self) -> None:
-        cmd = ComponentOpenSearch.gradle_cmd("publishToMavenLocal", {"build.snapshot": str(self.snapshot).lower()})
-        self.git_repo.execute_silent(cmd)
-
     @property
     def properties(self) -> PropertiesFile:
         cmd = ComponentOpenSearch.gradle_cmd("properties", {"build.snapshot": str(self.snapshot).lower()})
@@ -43,5 +40,4 @@ class ComponentOpenSearchMin(Component):
 
     @property
     def version(self) -> Any:
-        self.publish_to_maven_local()
         return self.properties.get_value("version")

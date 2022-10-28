@@ -1,3 +1,4 @@
+# Copyright OpenSearch Contributors
 # SPDX-License-Identifier: Apache-2.0
 #
 # The OpenSearch Contributors require contributions made to
@@ -23,6 +24,17 @@ def current_platform() -> str:
         return "windows"
     else:
         return subprocess.check_output(["uname", "-s"]).decode().strip().lower()
+
+
+def deb_architecture(architecture: str) -> str:
+    # This would convert arch from "current_architecture" to deb specific architecture alternatives
+
+    deb_architecture_map = {
+        "x64": "amd64",
+        "arm64": "arm64",
+    }
+
+    return deb_architecture_map[architecture]
 
 
 def rpm_architecture(architecture: str) -> str:

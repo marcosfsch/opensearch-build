@@ -1,3 +1,4 @@
+# Copyright OpenSearch Contributors
 # SPDX-License-Identifier: Apache-2.0
 #
 # The OpenSearch Contributors require contributions made to
@@ -21,10 +22,11 @@ class BuildOutputDirTests(unittest.TestCase):
         mock_dir = MagicMock()
         mock_os.path.join.return_value = mock_dir
 
-        BuildOutputDir("opensearch", makedirs=True)
+        BuildOutputDir("opensearch", "tar", makedirs=True)
 
         mock_os.path.join.assert_called_once_with(
             mock_cwd,
+            "tar",
             "builds",
             "opensearch"
         )
@@ -40,10 +42,11 @@ class BuildOutputDirTests(unittest.TestCase):
         mock_dir = MagicMock()
         mock_os.path.join.return_value = mock_dir
 
-        BuildOutputDir("opensearch-dashboards", makedirs=True)
+        BuildOutputDir("opensearch-dashboards", "tar", makedirs=True)
 
         mock_os.path.join.assert_called_once_with(
             mock_cwd,
+            "tar",
             "builds",
             "opensearch-dashboards"
         )
@@ -55,10 +58,11 @@ class BuildOutputDirTests(unittest.TestCase):
         mock_dir = MagicMock()
         mock_os.path.join.return_value = mock_dir
 
-        BuildOutputDir("opensearch", cwd="test_cwd", makedirs=False)
+        BuildOutputDir("opensearch", "tar", cwd="test_cwd", makedirs=False)
 
         mock_os.path.join.assert_called_once_with(
             "test_cwd",
+            "tar",
             "builds",
             "opensearch"
         )

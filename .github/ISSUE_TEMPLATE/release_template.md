@@ -40,6 +40,7 @@ To aid in understanding the state of the release there is a table with status in
 - [ ] [Create a release issue in every component repo](https://github.com/opensearch-project/opensearch-build/blob/main/meta/README.md#create-a-release-issue) that links back to this issue, update Components section with these links.
 - [ ] Ensure the label is created in each component repo for this new version, and the next minor release. [Create a version label](https://github.com/opensearch-project/opensearch-plugins/blob/main/META.md#create-or-update-labels-in-all-plugin-repos)
 - [ ] Ensure that all release issues created above are assigned to an owner in the component team.
+- [ ] Increase the build frequency for the this release from once a day (H 1 * * *) to once every hour (H/60 * * * *) in [jenkinsFile](https://github.com/opensearch-project/opensearch-build/blob/main/jenkins/check-for-build.jenkinsfile)
 
 ### CI/CD (Feature Freeze) - _Ends __REPLACE_RELEASE-minus-14-days__
 
@@ -47,6 +48,7 @@ To aid in understanding the state of the release there is a table with status in
 - [ ] Increment each component version to {{ env.VERSION }} and ensure working CI in component repositories.
 - [ ] Make pull requests to add each component to [manifests/{{ env.VERSION }}/opensearch-{{ env.VERSION }}.yml](/opensearch-project/opensearch-build/tree/main/manifests/{{ env.VERSION }}/opensearch-{{ env.VERSION }}.yml) and [manifests/{{ env.VERSION }}/opensearch-dashboards-{{ env.VERSION }}.yml](/opensearch-project/opensearch-build/tree/main/manifests/{{ env.VERSION }}/opensearch-dashboards-{{ env.VERSION }}.yml) with the corresponding checks.
 - [ ] OpenSearch / OpenSearch-Dashboards core and components teams finalize their features
+- [ ] OpenSearch / OpenSearch-Dashboards core cut branch `<MajorVersion>.<MinorVersion>` early.
 
 ### Campaigns
 
@@ -60,7 +62,9 @@ __REPLACE with OpenSearch wide initiatives to improve quality and consistency.__
 
 ### Release testing - _Ends __REPLACE_RELEASE-minus-6-days___
 
+- [ ] All components should have cut branch `<MajorVersion>.<MinorVersion>` for the release.
 - [ ] Declare a release candidate build, and provide the instructions with the release candidates for teams on testing (__REPLACE_RELEASE-minus-8-days__).
+- [ ] Stop builds for this version of OpenSearch and/or OpenSearch Dashboards in order to avoid accidental commits going in unknowingly. Restart only if necessary else manually run the build workflow and declare new release candidate.
 - [ ] Sanity Testing (__REPLACE_RELEASE-minus-8-days__ - __REPLACE_RELEASE-minus-6-days__): Sanity testing and fixing of critical issues found by teams. Teams test their components within the distribution, ensuring integration, backwards compatibility, and perf tests pass.
 - [ ] Publish all test results in the comments of this issue.
 
@@ -81,9 +85,11 @@ __REPLACE with OpenSearch wide initiatives to improve quality and consistency.__
 
 - [ ] Create [release tags](https://github.com/opensearch-project/opensearch-build/blob/main/jenkins/release-tag/release-tag.jenkinsfile) for each component (Jenkins job name: release-tag-creation).
 - [ ] Replace refs in [manifests/{{ env.VERSION }}](/opensearch-project/opensearch-build/tree/main/manifests/{{ env.VERSION }}) with tags and remove checks.
+- [ ] If this is a major or minor version release, stop building previous patch version.
 - [ ] Generate distribution release notes reviewed by PM team for opensearch-build repository.
+- [ ] Increment version for Helm Charts [(sample PR)](https://github.com/opensearch-project/helm-charts/pull/246) for the `{{ env.VERSION }}` release.
+- [ ] Increment version for Ansible Charts [(sample PR)](https://github.com/opensearch-project/ansible-playbook/pull/50) for the `{{ env.VERSION }}` release.
 - [ ] Prepare [for next patch release](https://github.com/opensearch-project/opensearch-plugins/blob/main/META.md#increment-a-version-in-every-plugin) by incrementing patch versions for each component.
-- [ ] Lower the [frequency of builds](https://github.com/opensearch-project/opensearch-build/pull/1475) for this version of OpenSearch and/or OpenSearch Dashboards.
 - [ ] Update [this template](https://github.com/opensearch-project/opensearch-build/blob/main/.github/ISSUE_TEMPLATE/release_template.md) with any new or missed steps.
 - [ ] Create an issue for a retrospective, solicit feedback, and publish a summary.
 
@@ -91,7 +97,7 @@ __REPLACE with OpenSearch wide initiatives to improve quality and consistency.__
 
 __Replace with links to all component tracking issues.__
 
-| Component | On track | Notes |
+| Component | On track | Release Notes |
 | --------- | -------- | ----- |
 | {COMPONENT_ISSUE_LINK} | {INDICATOR}} | {STATUS} |
 

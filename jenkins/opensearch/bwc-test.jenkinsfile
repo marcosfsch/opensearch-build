@@ -1,4 +1,7 @@
-lib = library(identifier: "jenkins@20211118", retriever: legacySCM(scm))
+lib = library(identifier: 'jenkins@1.0.4', retriever: modernSCM([
+    $class: 'GitSCMSource',
+    remote: 'https://github.com/opensearch-project/opensearch-build-libraries.git',
+]))
 
 pipeline {
     options {
@@ -8,9 +11,6 @@ pipeline {
     environment {
         BUILD_MANIFEST = "build-manifest.yml"
         DEFAULT_BUILD_JOB_NAME = "distribution-build-opensearch"
-    }
-    tools {
-        maven "maven-3.8.2"
     }
     parameters {
         string(
@@ -25,7 +25,7 @@ pipeline {
         )
         string(
             name: 'AGENT_LABEL',
-            description: 'The agent label where the tests should be executed, e.g. Jenkins-Agent-al2-x64-c54xlarge-Docker-Host.',
+            description: 'The agent label where the tests should be executed, e.g. Jenkins-Agent-AL2-X64-C54xlarge-Docker-Host.',
             trim: true
         )
     }
@@ -38,13 +38,14 @@ pipeline {
             }
             steps {
                 script {
+                    currentBuild.description = TEST_MANIFEST
                     if (AGENT_LABEL == '') {
                         currentBuild.result = 'ABORTED'
                         error("BWC Tests failed to start. Missing parameter: AGENT_LABEL.")
                     }
-                    if (!fileExists("manifests/${TEST_MANIFEST}")) {
+                    if (TEST_MANIFEST == '' || !fileExists("manifests/${TEST_MANIFEST}")) {
                         currentBuild.result = 'ABORTED'
-                        error("BWC Tests failed to start. Test manifest not found in manifests/${TEST_MANIFEST}.")
+                        error("BWC Tests failed to start. Test manifest not was provided or not found in manifests/${TEST_MANIFEST}.")
                     }
                     /*
                     Rebuilding of this job will result in considering upstream build as self($JOB_NAME) See https://issues.jenkins.io/browse/JENKINS-61590 for bug
@@ -59,7 +60,7 @@ pipeline {
         stage('detect docker image + args') {
             agent {
                 docker {
-                    label 'Jenkins-Agent-al2-x64-c54xlarge-Docker-Host'
+                    label 'Jenkins-Agent-AL2-X64-C54xlarge-Docker-Host'
                     image 'opensearchstaging/ci-runner:centos7-x64-arm64-jdkmulti-node10.24.1-cypress6.9.1-20211028'
                     alwaysPull true
                 }
@@ -103,8 +104,7 @@ pipeline {
                     script {
                         uploadTestResults(
                             buildManifestFileName: BUILD_MANIFEST,
-                            jobName: JOB_NAME,
-                            buildNumber: BUILD_ID
+                            jobName: JOB_NAME
                         )
                     }
                     postCleanup()
@@ -122,7 +122,7 @@ pipeline {
                         icon: ':white_check_mark:',
                         message: 'BWC Tests Successful',
                         extra: stashed,
-                        credentialsId: 'INTEG_TEST_WEBHOOK',
+                        credentialsId: 'jenkins-integ-test-webhook',
                         manifest: TEST_MANIFEST,
                     )
 
@@ -138,7 +138,7 @@ pipeline {
                         icon: ':warning:',
                         message: 'Failed BWC Tests',
                         extra: stashed,
-                        credentialsId: 'INTEG_TEST_WEBHOOK',
+                        credentialsId: 'jenkins-integ-test-webhook',
                         manifest: TEST_MANIFEST,
                     )
 

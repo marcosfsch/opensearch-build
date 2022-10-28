@@ -1,3 +1,4 @@
+# Copyright OpenSearch Contributors
 # SPDX-License-Identifier: Apache-2.0
 #
 # The OpenSearch Contributors require contributions made to
@@ -5,7 +6,7 @@
 # compatible open source license.
 
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 from test_workflow.bwc_test.bwc_test_start_properties_opensearch_dashboards import BwcTestStartPropertiesOpenSearchDashboards
 
@@ -14,7 +15,7 @@ class TestBwcTestStartPropertiesOpenSearchDashboards(unittest.TestCase):
 
     @patch("test_workflow.bwc_test.bwc_test_start_properties.BundleManifest")
     @patch("test_workflow.bwc_test.bwc_test_start_properties.BuildManifest")
-    def test(self, mock_build, mock_bundle):
+    def test(self, mock_build: Mock, mock_bundle: Mock) -> None:
         path = "test-path"
 
         mock_bundle_object = MagicMock()

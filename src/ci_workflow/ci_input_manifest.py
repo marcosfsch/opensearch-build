@@ -1,3 +1,4 @@
+# Copyright OpenSearch Contributors
 # SPDX-License-Identifier: Apache-2.0
 #
 # The OpenSearch Contributors require contributions made to
@@ -33,7 +34,7 @@ class CiInputManifest(CiManifest):
 
             logging.info(f"Sanity testing {self.manifest.build.name}")
 
-            for component in self.manifest.components.select(focus=self.args.component):
+            for component in self.manifest.components.select(focus=self.args.components):
                 logging.info(f"Sanity testing {component.name}")
 
                 ci_check_list = CiCheckLists.from_component(component, target)

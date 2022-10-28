@@ -1,3 +1,4 @@
+# Copyright OpenSearch Contributors
 # SPDX-License-Identifier: Apache-2.0
 #
 # The OpenSearch Contributors require contributions made to
@@ -12,12 +13,14 @@ import tarfile
 import zipfile
 from abc import ABC, abstractmethod
 
-from assemble_workflow.bundle_rpm import BundleRpm
+from assemble_workflow.bundle_linux_deb import BundleLinuxDeb
+from assemble_workflow.bundle_linux_rpm import BundleLinuxRpm
 from manifests.build_manifest import BuildManifest
 from system.zip_file import ZipFile
 
 
 class Dist(ABC):
+
     def __init__(self, name: str, path: str, min_path: str, build_cls: BuildManifest.Build) -> None:
         self.build_cls = build_cls
         self.name = name
@@ -102,17 +105,32 @@ class DistZip(Dist):
 
     def __build__(self, name: str, dest: str) -> None:
         with ZipFile(name, "w", zipfile.ZIP_DEFLATED) as zip:
-            rootlen = len(self.archive_path) + 1
+            # root               : /tmp/tmp********/opensearch-<version+qualifier>
+            # leadingdir         : opensearch-<version+qualifier>
+            # root no leading dir: /tmp/tmp********/
+            # This is to preserve the leading directory `opensearch-<version+qualifier>` in zip
+            rootlen = len(self.archive_path)
+            leadingdirlen = len(os.path.basename(self.archive_path))
+            noleadingdirlen = rootlen - leadingdirlen
             for base, _, files in os.walk(self.archive_path):
                 for file in files:
                     fn = os.path.join(base, file)
-                    zip.write(fn, fn[rootlen:])
+                    zip.write(fn, fn[noleadingdirlen:])
+
+
+class DistDeb(Dist):
+
+    def __extract__(self, dest: str) -> None:
+        BundleLinuxDeb(self.filename, self.path, self.min_path).extract(dest)
+
+    def __build__(self, name: str, dest: str) -> None:
+        BundleLinuxDeb(self.filename, self.path, self.min_path).build(name, dest, self.archive_path, self.build_cls)
 
 
 class DistRpm(Dist):
 
     def __extract__(self, dest: str) -> None:
-        BundleRpm(self.filename, self.path, self.min_path).extract(dest)
+        BundleLinuxRpm(self.filename, self.path, self.min_path).extract(dest)
 
     def __build__(self, name: str, dest: str) -> None:
-        BundleRpm(self.filename, self.path, self.min_path).build(name, dest, self.archive_path, self.build_cls)
+        BundleLinuxRpm(self.filename, self.path, self.min_path).build(name, dest, self.archive_path, self.build_cls)

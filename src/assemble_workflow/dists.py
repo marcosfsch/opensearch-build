@@ -1,3 +1,4 @@
+# Copyright OpenSearch Contributors
 # SPDX-License-Identifier: Apache-2.0
 #
 # The OpenSearch Contributors require contributions made to
@@ -6,7 +7,7 @@
 
 from typing import Type
 
-from assemble_workflow.dist import Dist, DistRpm, DistTar, DistZip
+from assemble_workflow.dist import Dist, DistDeb, DistRpm, DistTar, DistZip
 from manifests.build_manifest import BuildManifest
 
 
@@ -20,6 +21,7 @@ class Distribution:
 class Dists:
 
     DISTRIBUTIONS_MAP = {
+        "deb": Distribution(cls=DistDeb, extension=".deb"),
         "tar": Distribution(cls=DistTar, extension=".tar.gz"),
         "zip": Distribution(cls=DistZip, extension=".zip"),
         "rpm": Distribution(cls=DistRpm, extension=".rpm"),

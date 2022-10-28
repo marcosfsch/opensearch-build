@@ -1,3 +1,4 @@
+# Copyright OpenSearch Contributors
 # SPDX-License-Identifier: Apache-2.0
 #
 # The OpenSearch Contributors require contributions made to
@@ -9,5 +10,5 @@ from paths.output_dir import OutputDir
 
 
 class BuildOutputDir(OutputDir):
-    def __init__(self, filename: str, cwd: Optional[str] = None, makedirs: bool = True) -> None:
-        super().__init__("builds", filename, cwd, makedirs)
+    def __init__(self, filename: str, distribution: str, cwd: Optional[str] = None, makedirs: bool = True) -> None:
+        super().__init__("builds", filename, distribution, cwd, makedirs)

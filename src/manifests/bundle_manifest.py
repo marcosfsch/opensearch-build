@@ -1,10 +1,11 @@
+# Copyright OpenSearch Contributors
 # SPDX-License-Identifier: Apache-2.0
 #
 # The OpenSearch Contributors require contributions made to
 # this file be licensed under the Apache-2.0 license or a
 # compatible open source license.
 
-from typing import Any, Dict
+from typing import Dict
 
 from manifests.bundle.bundle_manifest_1_0 import BundleManifest_1_0
 from manifests.component_manifest import Component, ComponentManifest, Components
@@ -23,7 +24,7 @@ class BundleManifest(ComponentManifest['BundleManifest', 'BundleComponents']):
           version: string
           platform: linux, darwin or windows
           architecture: x64 or arm64
-          distribution: tar, zip, and rpm
+          distribution: tar, zip, deb and rpm
           id: build id
           location: /relative/path/to/tarball
         components:
@@ -65,7 +66,7 @@ class BundleManifest(ComponentManifest['BundleManifest', 'BundleComponents']):
         },
     }
 
-    def __init__(self, data: Any) -> None:
+    def __init__(self, data: dict) -> None:
         super().__init__(data)
         self.build = self.Build(data["build"])
         self.components = BundleComponents(data.get("components", []))  # type: ignore[assignment]
@@ -78,7 +79,7 @@ class BundleManifest(ComponentManifest['BundleManifest', 'BundleComponents']):
         }
 
     class Build:
-        def __init__(self, data: Dict[str, str]):
+        def __init__(self, data: Dict[str, str]) -> None:
             self.name = data["name"]
             self.version = data["version"]
             self.platform = data["platform"]
@@ -105,12 +106,12 @@ class BundleManifest(ComponentManifest['BundleManifest', 'BundleComponents']):
 
 class BundleComponents(Components['BundleComponent']):
     @classmethod
-    def __create__(self, data: Any) -> 'BundleComponent':
+    def __create__(self, data: dict) -> 'BundleComponent':
         return BundleComponent(data)
 
 
 class BundleComponent(Component):
-    def __init__(self, data: Any):
+    def __init__(self, data: dict) -> None:
         super().__init__(data)
         self.repository = data["repository"]
         self.ref = data["ref"]

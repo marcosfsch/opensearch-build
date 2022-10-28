@@ -1,3 +1,4 @@
+# Copyright OpenSearch Contributors
 # SPDX-License-Identifier: Apache-2.0
 #
 # The OpenSearch Contributors require contributions made to
@@ -11,7 +12,9 @@ import re
 from abc import abstractmethod
 from typing import Dict, List, Type, Union
 
-from manifests.input_manifest import InputManifest
+import ruamel.yaml
+
+from manifests.input_manifest import InputComponents, InputManifest
 from manifests.manifests import Manifests
 from manifests_workflow.component_opensearch import ComponentOpenSearch
 from manifests_workflow.component_opensearch_dashboards_min import ComponentOpenSearchDashboardsMin
@@ -30,6 +33,14 @@ class InputManifests(Manifests):
         return os.path.realpath(os.path.join(os.path.dirname(__file__), "..", "..", "manifests"))
 
     @classmethod
+    def workflows_path(self) -> str:
+        return os.path.realpath(os.path.join(os.path.dirname(__file__), "..", "..", ".github", "workflows"))
+
+    @classmethod
+    def legacy_manifests_path(self) -> str:
+        return os.path.realpath(os.path.join(os.path.dirname(__file__), "..", "..", "legacy-manifests"))
+
+    @classmethod
     def jenkins_path(self) -> str:
         return os.path.realpath(os.path.join(os.path.dirname(__file__), "..", "..", "jenkins"))
 
@@ -38,17 +49,27 @@ class InputManifests(Manifests):
         return os.path.join(self.jenkins_path(), "check-for-build.jenkinsfile")
 
     @classmethod
+    def versionincrement_workflow(self) -> str:
+        return os.path.join(self.workflows_path(), "increment-plugin-versions.yml")
+
+    @classmethod
     def files(self, name: str) -> List:
         results = []
-        for filename in glob.glob(os.path.join(self.manifests_path(), f"**/{name}-*.yml")):
-            # avoids the -maven manifest
-            match = re.search(rf"^{name}-([0-9.]*).yml$", os.path.basename(filename))
-            if match:
-                results.append(filename)
+        for path in [self.manifests_path(), self.legacy_manifests_path()]:
+            for filename in glob.glob(os.path.join(path, f"**/{name}-*.yml")):
+                # avoids the -maven manifest
+                match = re.search(rf"^{name}-([0-9.]*).yml$", os.path.basename(filename))
+                if match:
+                    results.append(filename)
         return results
 
     @abstractmethod
-    def update(self, min_klass: Union[Type[ComponentOpenSearchMin], Type[ComponentOpenSearchDashboardsMin]], component_klass: Type[ComponentOpenSearch], keep: bool = False) -> None:
+    def update(
+        self,
+        min_klass: Union[Type[ComponentOpenSearchMin], Type[ComponentOpenSearchDashboardsMin]],
+        component_klass: Type[ComponentOpenSearch],
+        keep: bool = False,
+    ) -> None:
         known_versions = self.versions
         logging.info(f"Known versions: {known_versions}")
         main_versions: Dict = {}
@@ -104,27 +125,26 @@ class InputManifests(Manifests):
             for release_version in sorted(main_versions.keys() - known_versions):
                 self.write_manifest(release_version, main_versions[release_version])
                 self.add_to_cron(release_version)
+                self.add_to_versionincrement_workflow(release_version)
 
     def create_manifest(self, version: str, components: List = []) -> InputManifest:
-        data: Dict = {
-            "schema-version": "1.0",
-            "build": {
-                "name": self.name,
-                "version": version
-            },
-            "ci": {
-                "image": {
-                    "name": "opensearchstaging/ci-runner:ci-runner-centos7-v1"
-                }
-            },
-            "components": [],
-        }
+        templates_base_path = os.path.join(self.manifests_path(), "templates")
+        template_version_folder = version.split(".")[0] + ".x"
+        template_full_path = os.path.join(templates_base_path, self.prefix, template_version_folder, "manifest.yml")
+        if not os.path.exists(template_full_path):
+            template_full_path = os.path.join(templates_base_path, self.prefix, "default", "manifest.yml")
+
+        manifest = InputManifest.from_file(open(template_full_path))
+
+        manifest.build.version = version
+        manifests_components = []
 
         for component in components:
             logging.info(f" Adding {component.name}")
-            data["components"].append(component.to_dict())
+            manifests_components.append(component.to_dict())
 
-        return InputManifest(data)
+        manifest.components = InputComponents(manifests_components)  # type: ignore
+        return manifest
 
     def write_manifest(self, version: str, components: List = []) -> None:
         logging.info(f"Creating new version: {version}")
@@ -141,17 +161,42 @@ class InputManifests(Manifests):
         with open(jenkinsfile, "r") as f:
             data = f.read()
 
-        cron_entry = f"H/10 * * * * %INPUT_MANIFEST={version}/{self.prefix}-{version}.yml;TARGET_JOB_NAME=distribution-build-{self.prefix}\n"
+        cron_entry = f"H 1 * * * %INPUT_MANIFEST={version}/{self.prefix}-{version}.yml;TARGET_JOB_NAME=distribution-build-{self.prefix}\n"
 
         if cron_entry in data:
             raise ValueError(f"{jenkinsfile} already contains an entry for {self.prefix} {version}")
 
-        data = data.replace(
-            "parameterizedCron '''\n",
-            f"parameterizedCron '''\n{' ' * 12}{cron_entry}"
-        )
+        data = data.replace("parameterizedCron '''\n", f"parameterizedCron '''\n{' ' * 12}{cron_entry}")
 
         with open(jenkinsfile, "w") as f:
             f.write(data)
 
         logging.info(f"Wrote {jenkinsfile}")
+
+    def add_to_versionincrement_workflow(self, version: str) -> None:
+        versionincrement_workflow_file = self.versionincrement_workflow()
+        yaml = ruamel.yaml.YAML()
+        yaml.explicit_start = True  # type: ignore
+        yaml.preserve_quotes = True  # type: ignore
+
+        with open(versionincrement_workflow_file) as f:
+            data = yaml.load(f)
+
+        version_entry = []
+        major_version_entry = version.split(".")[0] + ".x"
+        minor_version_entry = version.rsplit(".", 1)[0]
+        if minor_version_entry not in data["jobs"]["plugin-version-increment-sync"]["strategy"]["matrix"]["branch"]:
+            print(f"Adding {minor_version_entry} to {versionincrement_workflow_file}")
+            version_entry.append(minor_version_entry)
+        if major_version_entry not in data["jobs"]["plugin-version-increment-sync"]["strategy"]["matrix"]["branch"]:
+            print(f"Adding {major_version_entry} to {versionincrement_workflow_file}")
+            version_entry.append(major_version_entry)
+
+        if version_entry:
+            branch_list = list(data["jobs"]["plugin-version-increment-sync"]["strategy"]["matrix"]["branch"])
+            branch_list.extend(version_entry)
+            data["jobs"]["plugin-version-increment-sync"]["strategy"]["matrix"]["branch"] = branch_list
+            yaml.indent(mapping=2, sequence=4, offset=2)
+            with open(versionincrement_workflow_file, 'w') as f:
+                yaml.dump(data, f)
+            logging.info("Added new version to the version increment workflow")

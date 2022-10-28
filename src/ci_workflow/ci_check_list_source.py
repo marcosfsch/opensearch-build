@@ -1,3 +1,4 @@
+# Copyright OpenSearch Contributors
 # SPDX-License-Identifier: Apache-2.0
 #
 # The OpenSearch Contributors require contributions made to
@@ -31,7 +32,7 @@ class CiCheckListSource(CiCheckList):
     }
 
     class InvalidCheckError(Exception):
-        def __init__(self, check: Any):
+        def __init__(self, check: Any) -> None:
             self.check = check
             super().__init__(f"Invalid check: {check.name}, must be one of {CiCheckListSource.CHECKS.keys()}.")
 
